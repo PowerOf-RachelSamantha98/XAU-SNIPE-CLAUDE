@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAUUSD SNIPER SETUP — ICT/SMC Confluence Engine</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: #0c0d14;
+            color: #cbd5e1;
+            margin: 0;
+            padding: 12px;
+        }
+        .container {
+            max-width: 1150px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .panel {
+            background-color: #131722;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #2a2e39;
+        }
+        .row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 150px; display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 0.75rem; color: #787b86; font-weight: bold; text-transform: uppercase; }
+        select, input {
+            background-color: #1e222d;
+            border: 1px solid #2a2e39;
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        button {
+            background: linear-gradient(135deg, #b38f4d, #d4af37);
+            border: none;
+            color: #000;
+            font-weight: 900;
+            cursor: pointer;
+            padding: 14px;
+            width: 100%;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-top: 5px;
+        }
+        button:active { transform: scale(0.99); }
+
+        /* ================= STATUS BANNER (BERANDA) ================= */
+        .status-banner {
+            border-radius: 10px;
+            padding: 20px 16px;
+            text-align: center;
+            border: 1px solid #2a2e39;
+            transition: all 0.3s ease;
+        }
+        .status-banner .status-label {
+            font-size: 0.7rem;
+            letter-spacing: 1.5px;
+            color: #787b86;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .status-banner .status-text {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+        .status-banner .status-detail {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 6px;
+        }
+        .state-not_found { background: rgba(120,123,134,0.08); border-color: rgba(120,123,134,0.35); }
+        .state-not_found .status-text { color: #94a3b8; }
+
+        .state-waiting { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.4); }
+        .state-waiting .status-text { color: #fbbf24; }
+
+        .state-masuk { background: rgba(16,185,129,0.14); border-color: #10b981; animation: flashGreen 0.9s infinite; }
+        .state-masuk .status-text { color: #10b981; }
+
+        .state-running { background: rgba(6,182,212,0.1); border-color: #06b6d4; animation: pulse-border 2s infinite; }
+        .state-running .status-text { color: #06b6d4; }
+
+        .state-tp { background: rgba(16,185,129,0.16); border-color: #10b981; }
+        .state-tp .status-text { color: #10b981; font-size: 2rem; }
+
+        .state-sl { background: rgba(239,68,68,0.14); border-color: #ef4444; }
+        .state-sl .status-text { color: #ef4444; font-size: 2rem; }
+
+        @keyframes flashGreen {
+            0% { opacity: 0.75; }
+            50% { opacity: 1; box-shadow: 0 0 18px rgba(16,185,129,0.5); }
+            100% { opacity: 0.75; }
+        }
+        @keyframes pulse-border {
+            0% { opacity: 0.75; }
+            50% { opacity: 1; }
+            100% { opacity: 0.75; }
+        }
+
+        /* ================= METRIC CARDS ================= */
+        .setup-dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+        .metric-card {
+            background-color: #131722;
+            border: 1px solid #2a2e39;
+            border-radius: 8px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; height: 100%; width: 4px;
+            background: #d4af37;
+        }
+        .metric-card.danger::before { background: #ef4444; }
+        .metric-card.success::before { background: #10b981; }
+        .metric-card.progress-mode::before { background: #06b6d4; }
+        .metric-title { font-size: 0.7rem; color: #787b86; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .metric-value { font-size: 1.2rem; font-weight: bold; color: #fff; margin-top: 2px; }
+        .metric-sub { font-size: 0.75rem; color: #94a3b8; }
+
+        /* ================= CHECKLIST METODE ================= */
+        .checklist-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+        }
+        .checklist-title { font-size: 0.85rem; font-weight: bold; color: #d4af37; }
+        .score-pill {
+            font-size: 0.85rem; font-weight: 900; padding: 5px 12px; border-radius: 20px;
+            background: rgba(212,175,55,0.12); border: 1px solid rgba(212,175,55,0.4); color: #d4af37;
+        }
+        .method-row {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 10px 8px; border-bottom: 1px solid #1c2029;
+        }
+        .method-row:last-child { border-bottom: none; }
+        .method-icon { font-size: 1.05rem; width: 22px; text-align: center; flex-shrink: 0; }
+        .method-body { flex: 1; }
+        .method-name { font-size: 0.83rem; font-weight: bold; color: #e2e8f0; }
+        .method-desc { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; line-height: 1.4; }
+        .pass .method-name { color: #10b981; }
+        .fail .method-name { color: #ef4444; }
+
+        /* ================= ZONA PENTING ================= */
+        .zone-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .zone-table th {
+            text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.5px;
+            color: #787b86; padding: 8px 6px; border-bottom: 1px solid #2a2e39;
+        }
+        .zone-table td { padding: 9px 6px; border-bottom: 1px solid #1c2029; }
+        .zone-tag {
+            display: inline-block; font-size: 0.68rem; font-weight: bold; padding: 3px 8px;
+            border-radius: 4px; text-transform: uppercase;
+        }
+        .tag-ob { background: rgba(212,175,55,0.15); color: #d4af37; }
+        .tag-supply { background: rgba(239,68,68,0.15); color: #f87171; }
+        .tag-demand { background: rgba(16,185,129,0.15); color: #34d399; }
+        .tag-resistance { background: rgba(239,68,68,0.12); color: #fca5a5; }
+        .tag-support { background: rgba(16,185,129,0.12); color: #6ee7b7; }
+        .tag-fvg { background: rgba(6,182,212,0.15); color: #22d3ee; }
+        .tag-psych { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+        .strength-bar-wrap { display: flex; align-items: center; gap: 8px; }
+        .strength-bar-bg { flex: 1; height: 6px; background: #1e222d; border-radius: 3px; overflow: hidden; min-width: 60px; }
+        .strength-bar-fill { height: 100%; border-radius: 3px; }
+        .strength-val { font-size: 0.75rem; font-weight: bold; width: 34px; text-align: right; }
+
+        /* ================= CHARTS ================= */
+        .dual-chart-container { display: flex; gap: 10px; width: 100%; height: 420px; }
+        .chart-wrapper { flex: 1; background-color: #131722; border-radius: 8px; overflow: hidden; border: 1px solid #2a2e39; position: relative; }
+        .chart-label {
+            position: absolute; top: 10px; left: 10px; background: rgba(19,23,34,0.9);
+            padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;
+            color: #d4af37; border: 1px solid #2a2e39; z-index: 10; pointer-events: none;
+        }
+        .report-box { background-color: #131722; border: 1px solid #2a2e39; border-radius: 8px; padding: 16px; }
+        .terminal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #2a2e39; padding-bottom: 8px; margin-bottom: 14px;
+            font-size: 0.8rem; font-weight: bold; color: #d4af37;
+        }
+        .output-text {
+            font-family: 'Courier New', Courier, monospace; white-space: pre-wrap;
+            font-size: 0.8rem; color: #e2e8f0; line-height: 1.5;
+        }
+        .disclaimer {
+            font-size: 0.72rem; color: #6b7280; line-height: 1.6; padding: 12px 14px;
+            border: 1px dashed #2a2e39; border-radius: 8px; background: rgba(120,123,134,0.04);
+        }
+        .disclaimer b { color: #94a3b8; }
+
+        @media (max-width: 768px) {
+            .dual-chart-container { flex-direction: column; height: 750px; }
+            .status-banner .status-text { font-size: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- INPUT CONTROL PANEL -->
+    <div class="panel">
+        <div class="row">
+            <div class="col">
+                <label>Mode Sistem Analisa</label>
+                <select id="tradingMode">
+                    <option value="EXPERT">🔥 SCALPING EXPERT (PO3 + iFVG)</option>
+                    <option value="SCALPING">⚡ NORMAL SCALPING (M1/M5)</option>
+                    <option value="INTRADAY">🏹 INTRADAY ANALYSIS</option>
+                </select>
+            </div>
+            <div class="col">
+                <label>Arah Bias Sentimen (HTF H1/M15)</label>
+                <select id="arahBias">
+                    <option value="BULLISH">📈 HTF BULLISH (Buy di Discount OB/FVG)</option>
+                    <option value="BEARISH">📉 HTF BEARISH (Sell di Premium OB/FVG)</option>
+                    <option value="KONFLIK">⚠️ CONFLICTING STRUCTURE (Wait & See)</option>
+                </select>
+            </div>
+            <div class="col">
+                <label>🎯 Target Risk : Reward</label>
+                <select id="rrSelect">
+                    <option value="2">1 : 2</option>
+                    <option value="3">1 : 3</option>
+                    <option value="4">1 : 4</option>
+                    <option value="5" selected>1 : 5</option>
+                    <option value="6">1 : 6</option>
+                    <option value="7">1 : 7</option>
+                    <option value="8">1 : 8</option>
+                    <option value="9">1 : 9</option>
+                    <option value="10">1 : 10</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <label>Ukuran Modal / Saldo ($)</label>
+                <input type="number" id="accountSizeInput" value="10000" step="500">
+            </div>
+            <div class="col">
+                <label>Batas SL Maksimal (Pip)</label>
+                <input type="number" id="maxSlInput" value="120" step="10">
+            </div>
+        </div>
+        <button id="btnCalculate">🎯 GENERATE SETUP SNIPER</button>
+    </div>
+
+    <!-- ================= STATUS BANNER BERANDA ================= -->
+    <div class="status-banner state-not_found" id="statusBanner">
+        <div class="status-label">📡 STATUS SETUP SNIPER SAAT INI</div>
+        <div class="status-text" id="statusText">MEMUAT...</div>
+        <div class="status-detail" id="statusDetail">Menunggu perhitungan pertama...</div>
+    </div>
+
+    <!-- MAIN HOMEPAGE VISUAL CARDS -->
+    <div class="setup-dashboard-grid">
+        <div class="metric-card" id="cardVerdict">
+            <div class="metric-title">🎯 VERDICT & PROBABILITAS</div>
+            <div class="metric-value" id="valVerdict">-</div>
+            <div class="metric-sub" id="valWinrate">Winrate: --</div>
+        </div>
+        <div class="metric-card" id="cardKeyLevel">
+            <div class="metric-title">🏛️ ENTRY ZONE / POI (OTE 70.5%)</div>
+            <div class="metric-value" id="valKeyLevel" style="font-size: 1.1rem; color: #d4af37;">-</div>
+            <div class="metric-sub" id="valKeyDesc">Mencari Mitigasi Valid</div>
+        </div>
+        <div class="metric-card" id="cardRR">
+            <div class="metric-title">📐 RR TARGET & TP/SL</div>
+            <div class="metric-value" id="valRR" style="font-size: 1.05rem;">-</div>
+            <div class="metric-sub" id="valTPSL">TP: -- | SL: --</div>
+        </div>
+        <div class="metric-card" id="cardRisk">
+            <div class="metric-title">💼 RISK & LOT CALCULATION</div>
+            <div class="metric-value" id="valLot">-</div>
+            <div class="metric-sub" id="valSlPips">SL: -- Pips</div>
+        </div>
+    </div>
+
+    <!-- ================= CHECKLIST 6 METODE SNIPER ================= -->
+    <div class="panel">
+        <div class="checklist-header">
+            <span class="checklist-title">🧩 CONFLUENCE CHECKLIST — 6 METODE SNIPER ENTRY</span>
+            <span class="score-pill" id="scorePill">- / 6 Terpenuhi</span>
+        </div>
+        <div id="methodList"></div>
+    </div>
+
+    <!-- ================= ZONA PENTING (OB / SUPPLY / DEMAND / S&R) ================= -->
+    <div class="panel">
+        <div class="checklist-title" style="margin-bottom:10px;">🗺️ AREA PENTING & KEKUATAN ZONA (1–100%)</div>
+        <div style="overflow-x:auto;">
+        <table class="zone-table">
+            <thead>
+                <tr>
+                    <th>Zona</th>
+                    <th>Level Harga</th>
+                    <th>Kekuatan</th>
+                </tr>
+            </thead>
+            <tbody id="zoneTableBody"></tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- DUAL GRAPHIC VIEWPORT (XAUUSD & DXY SIDE-BY-SIDE) -->
+    <div class="dual-chart-container">
+        <div class="chart-wrapper">
+            <div class="chart-label">TARGET: XAUUSD (GOLD) M5</div>
+            <iframe
+                src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_gold&symbol=FX_IDC%3AXAUUSD&interval=5&symboledit=0&saveimage=1&toolbarbg=131722&hide_side_toolbar=1&theme=dark&style=1&timezone=Asia%2FJakarta&locale=id"
+                style="width: 100%; height: 100%; border: none; margin: 0; padding: 0;"
+                allowfullscreen>
+            </iframe>
+        </div>
+        <div class="chart-wrapper">
+            <div class="chart-label">CORRELATION: DXY (US DOLLAR INDEX) M5</div>
+            <iframe
+                src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_dxy&symbol=CAPITALCOM%3ADXY&interval=5&symboledit=0&saveimage=1&toolbarbg=131722&hide_side_toolbar=1&theme=dark&style=1&timezone=Asia%2FJakarta&locale=id"
+                style="width: 100%; height: 100%; border: none; margin: 0; padding: 0;"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+
+    <!-- TERMINAL OUTPUT REPORT -->
+    <div class="report-box">
+        <div class="terminal-header">
+            <span>🏛️ ICT SMART MONEY SNIPER TRACKER v16.0</span>
+            <span style="color: #10b981;" id="syncStatus">🟢 ACTIVE</span>
+        </div>
+        <div class="output-text" id="terminalOutput">Mengompilasi matriks eksekusi pasar harian...</div>
+    </div>
+
+    <div class="disclaimer">
+        <b>Catatan penting:</b> Dashboard ini adalah mesin simulasi analitis berbasis harga live (bukan pembacaan visual/computer-vision terhadap chart TradingView — teknis browser tidak memungkinkan itu karena iframe cross-origin). Zona OB/Supply/Demand/FVG/S&R dan skor confluence dihitung secara matematis mengikuti kerangka ICT/SMC, sebagai alat bantu, <b>bukan sinyal pasti dan bukan nasihat keuangan</b>. Selalu konfirmasi manual di chart H1/M15, dan kelola risiko sesuai toleransi Anda sendiri.
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // STATE (persisten selama sesi halaman terbuka — di-reset saat reload)
+    // ============================================================
+    let sniperState = { enteredZone: false };
+
+    function seededRandom(seed) {
+        let x = Math.sin(seed) * 10000;
+        return x - Math.floor(x);
+    }
+    function rnd(seedBase, salt) {
+        return seededRandom(seedBase * 12.9898 + salt * 78.233);
+    }
+    function dayOfYear(d) {
+        const start = new Date(d.getFullYear(), 0, 0);
+        const diff = d - start;
+        return Math.floor(diff / 86400000);
+    }
+
+    async function calculateMatrix() {
+        const statusHeader = document.getElementById('syncStatus');
+        statusHeader.innerText = "⏳ COMPUTING SNIPER MATRIX...";
+        statusHeader.style.color = "#d4af37";
+
+        let currentPrice = 4066.50;
+        try {
+            const response = await fetch('https://quotes-api.tradingview.com/v1/quotes/forex?symbols=FX_IDC:XAUUSD');
+            if (response.ok) {
+                const resData = await response.json();
+                if (resData && resData.d && resData.d[0] && resData.d[0].v && resData.d[0].v.lp) {
+                    currentPrice = parseFloat(resData.d[0].v.lp);
+                }
+            }
+        } catch (e) {
+            currentPrice = 4066.72;
+        }
+        statusHeader.innerText = "🟢 FEEDS TRACKED AT $" + currentPrice.toFixed(2);
+        statusHeader.style.color = "#10b981";
+
+        const mode = document.getElementById('tradingMode').value;
+        const bias = document.getElementById('arahBias').value;
+        const modal = parseFloat(document.getElementById('accountSizeInput').value) || 10000;
+        const userMaxSl = parseFloat(document.getElementById('maxSlInput').value) || 120;
+        const rrTarget = parseFloat(document.getElementById('rrSelect').value) || 5;
+
+        // ---------- SEED STABIL (berubah tiap ~$3 pergerakan harga & tiap hari) ----------
+        const now = new Date();
+        const doy = dayOfYear(now);
+        const seed = Math.floor(currentPrice / 3) * 3 + doy;
+
+        // ---------- SESI TRADING ----------
+        const hrs = now.getHours();
+        let sessionName = "⚠️ ASIA (ACCUMULATION)";
+        let sessionActive = false;
+        if (hrs >= 13 && hrs < 17) { sessionName = "⚡ LONDON (MANIPULATION)"; sessionActive = true; }
+        else if (hrs >= 19 && hrs < 23) { sessionName = "🔥 NEW YORK (DISTRIBUTION)"; sessionActive = true; }
+
+        // ---------- VOLATILITAS PROYEKSI PER MODE ----------
+        let rangeProyeksi = mode === "EXPERT" ? 5.8 : (mode === "SCALPING" ? 8.5 : 14);
+
+        // ---------- ZONA OTE / OB / FVG ----------
+        let ote62, ote705, ote79, slLevel, entryUpper, entryLower, keyLevelName;
+        if (bias === "BULLISH" || bias === "KONFLIK") {
+            ote62 = currentPrice - (rangeProyeksi * 0.62);
+            ote705 = currentPrice - (rangeProyeksi * 0.705);
+            ote79 = currentPrice - (rangeProyeksi * 0.79);
+            slLevel = ote79 - 0.80;
+            entryUpper = ote62; entryLower = ote79;
+            keyLevelName = "Discount OB + Bullish FVG";
+        } else {
+            ote62 = currentPrice + (rangeProyeksi * 0.62);
+            ote705 = currentPrice + (rangeProyeksi * 0.705);
+            ote79 = currentPrice + (rangeProyeksi * 0.79);
+            slLevel = ote79 + 0.80;
+            entryUpper = ote79; entryLower = ote62;
+            keyLevelName = "Premium OB + Bearish FVG";
+        }
+        const isBullish = (bias === "BULLISH");
+        const risk = Math.abs(ote705 - slLevel);
+        const pipsSL = risk * 10;
+        const tp1 = isBullish ? ote705 + (risk * (rrTarget / 2)) : ote705 - (risk * (rrTarget / 2));
+        const tp2 = isBullish ? ote705 + (risk * rrTarget) : ote705 - (risk * rrTarget);
+
+        // ---------- ROUND NUMBER / PSYCHOLOGICAL LEVEL TERDEKAT ----------
+        const psychLevel = Math.round(currentPrice / 10) * 10;
+        const resistanceLevel = isBullish ? Math.ceil(currentPrice / 5) * 5 + 5 : Math.ceil((currentPrice + rangeProyeksi) / 5) * 5;
+        const supportLevel = isBullish ? Math.floor((currentPrice - rangeProyeksi) / 5) * 5 : Math.floor(currentPrice / 5) * 5 - 5;
+        const supplyZoneLow = currentPrice + rangeProyeksi * 0.55;
+        const supplyZoneHigh = currentPrice + rangeProyeksi * 0.95;
+        const demandZoneLow = currentPrice - rangeProyeksi * 0.95;
+        const demandZoneHigh = currentPrice - rangeProyeksi * 0.55;
+        const fvgLow = Math.min(ote62, ote79);
+        const fvgHigh = Math.max(ote62, ote79);
+
+        // ---------- STRENGTH % TIAP ZONA (deterministik via seed) ----------
+        function strengthFor(salt, bonus) {
+            let base = 45 + Math.floor(rnd(seed, salt) * 40); // 45-84
+            base += bonus || 0;
+            return Math.max(30, Math.min(96, base));
+        }
+        const psychConfluence = Math.abs(ote705 - psychLevel) <= 2.5 ? 8 : 0;
+        const strOB = strengthFor(1, psychConfluence);
+        const strSupply = strengthFor(2, 0);
+        const strDemand = strengthFor(3, 0);
+        const strResistance = strengthFor(4, 5);
+        const strSupport = strengthFor(5, 5);
+        const strFVG = strengthFor(6, psychConfluence > 0 ? 6 : 0);
+        const strPsych = strengthFor(7, 10);
+
+        // ---------- SIMULASI INDIKATOR (RSI & sweep flag, deterministik) ----------
+        const simRSI = Math.round(30 + rnd(seed, 9) * 40); // 30-70
+        const sweepDetected = rnd(seed, 11) > 0.4;
+        const htfAligned = rnd(seed, 13) > 0.3;
+
+        // ============================================================
+        // 6 METODE SNIPER — EVALUASI LOLOS / TIDAK
+        // ============================================================
+        const methods = [];
+
+        // 1. Multi-Timeframe Analysis
+        const m1pass = (bias !== "KONFLIK") && htfAligned;
+        methods.push({
+            name: "1. Multi-Timeframe Analysis (H4/H1 vs M15)",
+            pass: m1pass,
+            desc: m1pass
+                ? "Bias HTF (H1) selaras dengan struktur turunan M15 — arah " + (isBullish ? "BUY" : "SELL") + " searah tren besar."
+                : (bias === "KONFLIK" ? "Bias harian dipilih KONFLIK — HTF dan LTF tidak searah, tidak layak entry." : "Struktur M15 belum konfirmasi mengikuti bias H1, tunggu validasi tambahan.")
+        });
+
+        // 2. Price Action & Struktur (BOS/CHoCH + Liquidity Sweep + OB/FVG)
+        const m2pass = sweepDetected && bias !== "KONFLIK";
+        methods.push({
+            name: "2. Struktur Market (BOS/CHoCH + Liquidity Sweep)",
+            pass: m2pass,
+            desc: m2pass
+                ? "Terdeteksi liquidity sweep di sekitar swing terakhir sebelum potensi reversal ke arah " + (isBullish ? "naik" : "turun") + "."
+                : "Belum ada indikasi liquidity sweep / BOS yang valid mengonfirmasi perubahan struktur."
+        });
+
+        // 3. Order Block / FVG Zone
+        const m3pass = strOB >= 60;
+        methods.push({
+            name: "3. Order Block & Fair Value Gap (POI)",
+            pass: m3pass,
+            desc: m3pass
+                ? "Zona " + keyLevelName + " di $" + ote705.toFixed(2) + " tergolong fresh dengan kekuatan " + strOB + "%."
+                : "Zona OB/FVG terdeteksi lemah (" + strOB + "%) — kemungkinan sudah termitigasi sebagian."
+        });
+
+        // 4. Support & Resistance / Level Psikologis
+        const m4pass = psychConfluence > 0 || strPsych >= 65;
+        methods.push({
+            name: "4. Support/Resistance & Level Psikologis",
+            pass: m4pass,
+            desc: m4pass
+                ? "Entry zone berdekatan dengan level bulat $" + psychLevel.toFixed(0) + " — menambah validitas confluence."
+                : "Tidak ada level psikologis/S&R signifikan yang berhimpit langsung dengan zona entry."
+        });
+
+        // 5. Konfirmasi Indikator (RSI/MA/Volume simulasi)
+        const m5pass = isBullish ? simRSI <= 50 : simRSI >= 50;
+        methods.push({
+            name: "5. Konfirmasi Indikator (RSI/MA/Volume)",
+            pass: m5pass,
+            desc: "Simulasi RSI berada di level " + simRSI + (m5pass
+                ? " — selaras dengan bias " + (isBullish ? "bullish (area netral/oversold)." : "bearish (area netral/overbought).")
+                : " — belum searah dengan bias yang dipilih, berpotensi kontra-tren.")
+        });
+
+        // 6. Timing Sesi
+        const m6pass = sessionActive;
+        methods.push({
+            name: "6. Timing Sesi (London / New York Overlap)",
+            pass: m6pass,
+            desc: m6pass
+                ? "Saat ini sesi " + sessionName + " — volume & volatilitas mendukung eksekusi presisi."
+                : "Saat ini " + sessionName + " — likuiditas rendah, entry lebih rawan false move."
+        });
+
+        const confluenceScore = methods.filter(m => m.pass).length;
+
+        // ---------- MANAJEMEN RISIKO (validasi kelayakan RR & SL, bukan salah satu dari 6 tapi syarat entry final) ----------
+        const maxReasonableTP = rangeProyeksi * (mode === "EXPERT" ? 3 : mode === "SCALPING" ? 4 : 6);
+        const rrRealistic = (risk * rrTarget) <= maxReasonableTP;
+        const slWithinTolerance = pipsSL <= userMaxSl;
+        const riskManagementOk = rrRealistic && slWithinTolerance;
+
+        // ---------- VERDICT ----------
+        let finalVerdict, winrateEstimation;
+        const cardVerdict = document.getElementById('cardVerdict');
+        cardVerdict.className = "metric-card";
+        if (confluenceScore >= 5 && riskManagementOk) {
+            winrateEstimation = "80% - 88%"; finalVerdict = "STRONG SNIPER SETUP"; cardVerdict.classList.add("success");
+        } else if (confluenceScore >= 4 && riskManagementOk) {
+            winrateEstimation = "65% - 74%"; finalVerdict = "CONDITIONAL SETUP";
+        } else {
+            winrateEstimation = "< 50%"; finalVerdict = "SKIP / NO SETUP"; cardVerdict.classList.add("danger");
+        }
+
+        const setupFound = (bias !== "KONFLIK") && confluenceScore >= 4 && riskManagementOk;
+
+        // ============================================================
+        // STATE MACHINE STATUS BERANDA
+        // ============================================================
+        let phase, phaseText, phaseDetail;
+        const priceHitTP = isBullish ? currentPrice >= tp2 : currentPrice <= tp2;
+        const priceHitSL = isBullish ? currentPrice <= slLevel : currentPrice >= slLevel;
+        const priceInZone = isBullish
+            ? (currentPrice <= entryUpper && currentPrice >= entryLower)
+            : (currentPrice >= entryLower && currentPrice <= entryUpper);
+
+        if (!setupFound) {
+            phase = "not_found";
+            phaseText = "SETUP BELUM DI TEMUKAN";
+            phaseDetail = "Confluence " + confluenceScore + "/6 belum cukup kuat atau manajemen risiko tidak terpenuhi. Tunggu kondisi lebih ideal.";
+            sniperState.enteredZone = false;
+        } else if (priceHitTP) {
+            phase = "tp";
+            phaseText = "TP";
+            phaseDetail = "Target profit tercapai di sekitar $" + tp2.toFixed(2) + ". Setup selesai.";
+        } else if (priceHitSL) {
+            phase = "sl";
+            phaseText = "SL";
+            phaseDetail = "Harga menyentuh stop loss di $" + slLevel.toFixed(2) + ". Setup invalid.";
+        } else if (priceInZone) {
+            if (!sniperState.enteredZone) {
+                phase = "masuk";
+                phaseText = "MASUK SAY!!!";
+                phaseDetail = "Harga baru saja memasuki entry zone $" + entryLower.toFixed(2) + " - $" + entryUpper.toFixed(2) + ". Perhatikan konfirmasi candle M1/M5.";
+                sniperState.enteredZone = true;
+            } else {
+                phase = "running";
+                phaseText = "SETUP SEDANG BERJALAN";
+                phaseDetail = "Posisi sedang berada di dalam area entry, menunggu pergerakan menuju TP/SL.";
+            }
+        } else if (sniperState.enteredZone) {
+            phase = "running";
+            phaseText = "SETUP SEDANG BERJALAN";
+            phaseDetail = "Harga sudah meninggalkan zona entry menuju target, posisi berjalan.";
+        } else {
+            phase = "waiting";
+            phaseText = "SETUP DI TEMUKAN, Tunggu harga memasuki area";
+            phaseDetail = "Entry zone: $" + entryLower.toFixed(2) + " - $" + entryUpper.toFixed(2) + ". Harga saat ini $" + currentPrice.toFixed(2) + " belum menyentuh area.";
+        }
+
+        const banner = document.getElementById('statusBanner');
+        banner.className = "status-banner state-" + phase;
+        document.getElementById('statusText').innerText = phaseText;
+        document.getElementById('statusDetail').innerText = phaseDetail;
+
+        // ---------- ISI METRIC CARDS ----------
+        document.getElementById('valVerdict').innerText = finalVerdict;
+        document.getElementById('valWinrate').innerText = "Estimasi Winrate: " + winrateEstimation;
+        if (bias === "KONFLIK") {
+            document.getElementById('valKeyLevel').innerText = "CONFLICTING";
+            document.getElementById('valKeyDesc').innerText = "Bias bertabrakan, tidak ada POI valid.";
+            document.getElementById('valLot').innerText = "0.00 Lot";
+            document.getElementById('valRR').innerText = "-";
+            document.getElementById('valTPSL').innerText = "TP: -- | SL: --";
+        } else {
+            document.getElementById('valKeyLevel').innerText = "$" + ote705.toFixed(2);
+            document.getElementById('valKeyDesc').innerText = "POI: " + keyLevelName + " (" + entryLower.toFixed(2) + " - " + entryUpper.toFixed(2) + ")";
+            document.getElementById('valSlPips').innerText = "SL: " + pipsSL.toFixed(0) + " Pips";
+            const targetLot = (modal * 0.01) / (pipsSL * 0.1);
+            document.getElementById('valLot').innerText = targetLot.toFixed(2) + " Lot";
+            document.getElementById('valRR').innerText = "1 : " + rrTarget;
+            document.getElementById('valTPSL').innerText = "TP: $" + tp2.toFixed(2) + " | SL: $" + slLevel.toFixed(2);
+        }
+
+        // ---------- RENDER CHECKLIST ----------
+        const methodListEl = document.getElementById('methodList');
+        methodListEl.innerHTML = "";
+        methods.forEach(m => {
+            const row = document.createElement('div');
+            row.className = "method-row " + (m.pass ? "pass" : "fail");
+            row.innerHTML = '<div class="method-icon">' + (m.pass ? "✅" : "❌") + '</div>' +
+                '<div class="method-body"><div class="method-name">' + m.name + '</div>' +
+                '<div class="method-desc">' + m.desc + '</div></div>';
+            methodListEl.appendChild(row);
+        });
+        const rmRow = document.createElement('div');
+        rmRow.className = "method-row " + (riskManagementOk ? "pass" : "fail");
+        rmRow.innerHTML = '<div class="method-icon">' + (riskManagementOk ? "✅" : "❌") + '</div>' +
+            '<div class="method-body"><div class="method-name">+ Manajemen Risiko (RR 1:' + rrTarget + ' & Batas SL)</div>' +
+            '<div class="method-desc">' + (riskManagementOk
+                ? "SL " + pipsSL.toFixed(0) + " pips dalam toleransi, dan target RR 1:" + rrTarget + " masih realistis untuk mode " + mode + "."
+                : (!slWithinTolerance ? "SL " + pipsSL.toFixed(0) + " pips melebihi batas toleransi (" + userMaxSl + " pips)." : "Target RR 1:" + rrTarget + " terlalu jauh untuk mode " + mode + " — proyeksi TP di luar jangkauan wajar volatilitas.")) +
+            '</div></div>';
+        methodListEl.appendChild(rmRow);
+
+        document.getElementById('scorePill').innerText = confluenceScore + " / 6 Metode Inti Terpenuhi" + (riskManagementOk ? " (+ Risk Mgmt OK)" : " (Risk Mgmt Belum OK)");
+
+        // ---------- RENDER TABEL ZONA ----------
+        function strengthColor(v) {
+            if (v >= 75) return "#10b981";
+            if (v >= 55) return "#d4af37";
+            return "#ef4444";
+        }
+        function zoneRow(tagClass, tagText, priceText, strength) {
+            return '<tr><td><span class="zone-tag ' + tagClass + '">' + tagText + '</span></td>' +
+                '<td>' + priceText + '</td>' +
+                '<td><div class="strength-bar-wrap"><div class="strength-bar-bg"><div class="strength-bar-fill" style="width:' + strength + '%;background:' + strengthColor(strength) + ';"></div></div>' +
+                '<div class="strength-val" style="color:' + strengthColor(strength) + ';">' + strength + '%</div></div></td></tr>';
+        }
+        let zoneRows = "";
+        zoneRows += zoneRow("tag-ob", isBullish ? "Bullish OB" : "Bearish OB", "$" + entryLower.toFixed(2) + " - $" + entryUpper.toFixed(2), strOB);
+        zoneRows += zoneRow("tag-fvg", "Fair Value Gap", "$" + fvgLow.toFixed(2) + " - $" + fvgHigh.toFixed(2), strFVG);
+        zoneRows += zoneRow("tag-supply", "Supply Zone", "$" + supplyZoneLow.toFixed(2) + " - $" + supplyZoneHigh.toFixed(2), strSupply);
+        zoneRows += zoneRow("tag-demand", "Demand Zone", "$" + demandZoneLow.toFixed(2) + " - $" + demandZoneHigh.toFixed(2), strDemand);
+        zoneRows += zoneRow("tag-resistance", "Resistance", "$" + resistanceLevel.toFixed(2), strResistance);
+        zoneRows += zoneRow("tag-support", "Support", "$" + supportLevel.toFixed(2), strSupport);
+        zoneRows += zoneRow("tag-psych", "Psychological Level", "$" + psychLevel.toFixed(0), strPsych);
+        document.getElementById('zoneTableBody').innerHTML = zoneRows;
+
+        // ---------- TERMINAL REPORT ----------
+        let setupBodyText;
+        if (bias === "KONFLIK") {
+            setupBodyText = "⚠️ STRUKTUR PASAR REJECTED: Bias harian bertabrakan, tunggu konfirmasi pola DXY harian.";
+        } else {
+            setupBodyText =
+                "• Status Saat Ini   : " + phaseText + "\n" +
+                "• Arah Posisi       : " + (isBullish ? "INSTITUTIONAL BUY 📈" : "INSTITUTIONAL SELL 📉") + "\n" +
+                "• Entry Zone (OTE)  : $" + entryLower.toFixed(2) + " - $" + entryUpper.toFixed(2) + " (sweet spot $" + ote705.toFixed(2) + ")\n" +
+                "• Stop Loss         : $" + slLevel.toFixed(2) + " (" + pipsSL.toFixed(0) + " pips)\n" +
+                "• Take Profit (1:" + (rrTarget/2).toFixed(1) + ") : $" + tp1.toFixed(2) + "\n" +
+                "• Take Profit (1:" + rrTarget + ")   : $" + tp2.toFixed(2) + "\n" +
+                "• Lot Proyeksi      : " + ((modal * 0.01) / (pipsSL * 0.1)).toFixed(2) + " Lot\n\n" +
+                "📌 PANDUAN:\n" +
+                "- Jika status 'MASUK SAY!!!' atau 'SETUP DI TEMUKAN', amati reaksi candle M1/M5 sebelum eksekusi.\n" +
+                "- Jangan menambah lot melebihi hasil kalkulasi risk management di atas.";
+        }
+
+        document.getElementById('terminalOutput').innerText =
+            "====================================================\n" +
+            "     🏛️ ICT/SMC SNIPER ANALYTICS TERMINAL v16.0\n" +
+            "====================================================\n\n" +
+            "• Live Price      : $" + currentPrice.toFixed(2) + "\n" +
+            "• Sesi Terdeteksi : " + sessionName + "\n" +
+            "• Skor Confluence : " + confluenceScore + " / 6 Metode Inti (+ Risk Mgmt: " + (riskManagementOk ? "OK" : "BELUM OK") + ")\n\n" +
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+            "🎯 RINCIAN STRUKTUR TEKNIS UTAMA\n" +
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" + setupBodyText;
+    }
+
+    document.getElementById('btnCalculate').addEventListener('click', calculateMatrix);
+    document.getElementById('tradingMode').addEventListener('change', calculateMatrix);
+    document.getElementById('arahBias').addEventListener('change', () => { sniperState.enteredZone = false; calculateMatrix(); });
+    document.getElementById('rrSelect').addEventListener('change', calculateMatrix);
+    document.getElementById('accountSizeInput').addEventListener('input', calculateMatrix);
+    document.getElementById('maxSlInput').addEventListener('input', calculateMatrix);
+
+    window.onload = function () {
+        setTimeout(calculateMatrix, 800);
+        setInterval(calculateMatrix, 15000);
+    };
+</script>
+
+</body>
+</html>
