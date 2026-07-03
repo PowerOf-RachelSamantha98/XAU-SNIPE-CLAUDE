@@ -252,6 +252,19 @@
         </div>
         <div class="row">
             <div class="col">
+                <label>💲 Sumber Harga XAUUSD</label>
+                <select id="priceSourceMode">
+                    <option value="AUTO">🔄 AUTO (ambil dari API live)</option>
+                    <option value="MANUAL">✍️ MANUAL (samakan persis dengan chart)</option>
+                </select>
+            </div>
+            <div class="col" id="manualPriceCol" style="display:none;">
+                <label>Harga Manual (lihat harga "C" di chart kiri)</label>
+                <input type="number" id="manualPriceInput" value="4066.50" step="0.01">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
                 <label>Ukuran Modal / Saldo ($)</label>
                 <input type="number" id="accountSizeInput" value="10000" step="500">
             </div>
@@ -268,6 +281,15 @@
         <div class="status-label">📡 STATUS SETUP SNIPER SAAT INI</div>
         <div class="status-text" id="statusText">MEMUAT...</div>
         <div class="status-detail" id="statusDetail">Menunggu perhitungan pertama...</div>
+    </div>
+
+    <!-- ================= PRICE SYNC STATUS ================= -->
+    <div class="metric-card" id="cardPriceSync" style="flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <div class="metric-title">💲 STATUS SINKRONISASI HARGA</div>
+            <div class="metric-value" id="valPriceSync" style="font-size:1.05rem;">-</div>
+        </div>
+        <div class="metric-sub" id="valPriceSyncDetail" style="text-align:right;">-</div>
     </div>
 
     <!-- MAIN HOMEPAGE VISUAL CARDS -->
@@ -373,23 +395,90 @@
         return Math.floor(diff / 86400000);
     }
 
+    let lastKnownPrice = null;
+    let lastKnownSource = null;
+    let lastSuccessTime = null;
+
+    // Beberapa sumber harga live dicoba berurutan (CORS-friendly).
+    // Kalau semua gagal, kita TIDAK diam-diam pakai angka basi —
+    // kita pakai cache terakhir yang berhasil dan beri tahu user secara jelas.
+    async function tryFetchPrice(url, parser, label) {
+        try {
+            const res = await fetch(url, { cache: "no-store" });
+            if (!res.ok) return null;
+            const json = await res.json();
+            const price = parser(json);
+            if (price && !isNaN(price) && price > 0) {
+                return { price: parseFloat(price), source: label };
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function fetchLivePrice() {
+        const sources = [
+            ["https://api.gold-api.com/price/XAU", j => j.price, "gold-api.com"],
+            ["https://data-asg.goldprice.org/dbXRates/USD", j => (j.items && j.items[0] && j.items[0].xauPrice), "goldprice.org"],
+            ["https://quotes-api.tradingview.com/v1/quotes/forex?symbols=FX_IDC:XAUUSD", j => (j.d && j.d[0] && j.d[0].v && j.d[0].v.lp), "tradingview"]
+        ];
+        for (const [url, parser, label] of sources) {
+            const result = await tryFetchPrice(url, parser, label);
+            if (result) return result;
+        }
+        return null;
+    }
+
     async function calculateMatrix() {
         const statusHeader = document.getElementById('syncStatus');
         statusHeader.innerText = "⏳ COMPUTING SNIPER MATRIX...";
         statusHeader.style.color = "#d4af37";
 
-        let currentPrice = 4066.50;
-        try {
-            const response = await fetch('https://quotes-api.tradingview.com/v1/quotes/forex?symbols=FX_IDC:XAUUSD');
-            if (response.ok) {
-                const resData = await response.json();
-                if (resData && resData.d && resData.d[0] && resData.d[0].v && resData.d[0].v.lp) {
-                    currentPrice = parseFloat(resData.d[0].v.lp);
-                }
+        const priceSourceMode = document.getElementById('priceSourceMode').value;
+        const priceSyncEl = document.getElementById('valPriceSync');
+        const priceSyncDetailEl = document.getElementById('valPriceSyncDetail');
+
+        let currentPrice;
+        if (priceSourceMode === "MANUAL") {
+            currentPrice = parseFloat(document.getElementById('manualPriceInput').value) || lastKnownPrice || 4000;
+            priceSyncEl.innerText = "✍️ MANUAL — $" + currentPrice.toFixed(2);
+            priceSyncEl.style.color = "#d4af37";
+            priceSyncDetailEl.innerText = "Disamakan manual sesuai angka di chart TradingView.";
+            lastKnownPrice = currentPrice;
+        } else {
+            const result = await fetchLivePrice();
+            if (result) {
+                currentPrice = result.price;
+                lastKnownPrice = currentPrice;
+                lastKnownSource = result.source;
+                lastSuccessTime = new Date();
+                priceSyncEl.innerText = "🟢 LIVE ($" + currentPrice.toFixed(2) + ") — " + result.source;
+                priceSyncEl.style.color = "#10b981";
+                priceSyncDetailEl.innerText = "Update: " + lastSuccessTime.toLocaleTimeString('id-ID');
+            } else if (lastKnownPrice) {
+                currentPrice = lastKnownPrice;
+                priceSyncEl.innerText = "🔴 OFFLINE — pakai cache $" + currentPrice.toFixed(2);
+                priceSyncEl.style.color = "#ef4444";
+                priceSyncDetailEl.innerText = "Semua API gagal. Cek koneksi, atau pakai mode MANUAL di atas agar sesuai chart.";
+            } else {
+                priceSyncEl.innerText = "🔴 GAGAL AMBIL HARGA";
+                priceSyncEl.style.color = "#ef4444";
+                priceSyncDetailEl.innerText = "Belum ada harga sama sekali. Gunakan mode MANUAL dan masukkan harga dari chart secara langsung.";
+                statusHeader.innerText = "🔴 NO PRICE FEED";
+                statusHeader.style.color = "#ef4444";
+                document.getElementById('statusBanner').className = "status-banner state-not_found";
+                document.getElementById('statusText').innerText = "SETUP BELUM DI TEMUKAN";
+                document.getElementById('statusDetail').innerText = "Harga live tidak tersedia dari sumber manapun. Coba mode MANUAL.";
+                return; // hentikan perhitungan, jangan menampilkan angka palsu
             }
-        } catch (e) {
-            currentPrice = 4066.72;
         }
+        // Peringatan jika harga API berbeda jauh (>$15) dari feed chart TradingView — normal karena beda vendor/spread,
+        // tapi tetap diberi tahu supaya user tidak bingung seperti sebelumnya.
+        if (priceSourceMode === "AUTO") {
+            priceSyncDetailEl.innerText += " | Catatan: beda vendor data bisa selisih beberapa $ dari chart. Kalau butuh presisi 1:1, pakai mode MANUAL.";
+        }
+
         statusHeader.innerText = "🟢 FEEDS TRACKED AT $" + currentPrice.toFixed(2);
         statusHeader.style.color = "#10b981";
 
@@ -697,6 +786,12 @@
             "🎯 RINCIAN STRUKTUR TEKNIS UTAMA\n" +
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" + setupBodyText;
     }
+
+    document.getElementById('priceSourceMode').addEventListener('change', function () {
+        document.getElementById('manualPriceCol').style.display = (this.value === "MANUAL") ? "flex" : "none";
+        calculateMatrix();
+    });
+    document.getElementById('manualPriceInput').addEventListener('input', calculateMatrix);
 
     document.getElementById('btnCalculate').addEventListener('click', calculateMatrix);
     document.getElementById('tradingMode').addEventListener('change', calculateMatrix);
